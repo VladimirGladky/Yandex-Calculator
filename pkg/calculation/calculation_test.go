@@ -1,10 +1,10 @@
 package calculation_test
 
 import (
-	"FinalTaskFirstSprint/internal/application"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/application"
 	"io"
 	"net/http"
 	"net/http/httptest"

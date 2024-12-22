@@ -1,9 +1,9 @@
 package application
 
 import (
-	"FinalTaskFirstSprint/pkg/calculation"
 	"encoding/json"
 	"errors"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/calculation"
 	"io"
 	"net/http"
 	"os"

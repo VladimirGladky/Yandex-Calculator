@@ -1,1 +1,1 @@
-module FinalTaskFirstSprint
+module github.com/VladimirGladky/FinalTaskFirstSprint
