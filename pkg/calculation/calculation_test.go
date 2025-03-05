@@ -1,115 +1,107 @@
-package calculation_test
+package calculation
 
 import (
-	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/calculation"
 	"testing"
+	"time"
+
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/models"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestCalc(t *testing.T) {
-	testCasesSuccess := []struct {
-		name           string
-		expression     string
-		expectedResult float64
-	}{
-		{
-			name:           "simple",
-			expression:     "1+1",
-			expectedResult: 2,
-		},
-		{
-			name:           "priority",
-			expression:     "(2+2)*2",
-			expectedResult: 8,
-		},
-		{
-			name:           "priority",
-			expression:     "2+2*2",
-			expectedResult: 6,
-		},
-		{
-			name:           "/",
-			expression:     "1/2",
-			expectedResult: 0.5,
-		},
-		{
-			name:           "justNumber",
-			expression:     "3",
-			expectedResult: 3,
-		},
-		{
-			name:           "longExpression",
-			expression:     "(4+3+2)/(1+2) * 1 / 3",
-			expectedResult: 1,
-		},
-		{
-			name:           "longExpression2",
-			expression:     "((1+4) * (1+2) +1) *4",
-			expectedResult: 64,
-		},
-		{
-			name:           "expressionWithSpaces",
-			expression:     "1+1 * 2",
-			expectedResult: 3,
-		},
-	}
+func TestComputeTask(t *testing.T) {
+	t.Run("Addition", func(t *testing.T) {
+		task := models.TaskGet{
+			Arg1:          10,
+			Arg2:          5,
+			Operation:     "+",
+			OperationTime: 100,
+		}
 
-	for _, testCase := range testCasesSuccess {
-		t.Run(testCase.name, func(t *testing.T) {
-			val, err := calculation.Calc(testCase.expression)
-			if err != nil {
-				t.Fatalf("successful case %s returns error", testCase.expression)
-			}
-			if val != testCase.expectedResult {
-				t.Fatalf("%f should be equal %f", val, testCase.expectedResult)
-			}
-		})
-	}
+		result, err := ComputeTask(task)
+		assert.NoError(t, err)
+		assert.Equal(t, 15.0, result)
+	})
 
-	testCasesFail := []struct {
-		name        string
-		expression  string
-		expectedErr error
-	}{
-		{
-			name:       "simple",
-			expression: "1+1*",
-		},
-		{
-			name:       "priority",
-			expression: "2+2**2",
-		},
-		{
-			name:       "priority",
-			expression: "((2+2-*(2",
-		},
-		{
-			name:       "/",
-			expression: "",
-		},
-		{
-			name:       "unknownOperation",
-			expression: "1**2",
-		},
-		{
-			name:       "unknownOperation2",
-			expression: "6^2",
-		},
-		{
-			name:       "justOperation",
-			expression: "-",
-		},
-		{
-			name:       "zeroDivision",
-			expression: "1/0",
-		},
-	}
+	t.Run("Subtraction", func(t *testing.T) {
+		task := models.TaskGet{
+			Arg1:          10,
+			Arg2:          5,
+			Operation:     "-",
+			OperationTime: 100,
+		}
 
-	for _, testCase := range testCasesFail {
-		t.Run(testCase.name, func(t *testing.T) {
-			val, err := calculation.Calc(testCase.expression)
-			if err == nil {
-				t.Fatalf("expression %s is invalid but result  %f was obtained", testCase.expression, val)
-			}
-		})
-	}
+		result, err := ComputeTask(task)
+		assert.NoError(t, err)
+		assert.Equal(t, 5.0, result)
+	})
+
+	t.Run("Multiplication", func(t *testing.T) {
+		task := models.TaskGet{
+			Arg1:          10,
+			Arg2:          5,
+			Operation:     "*",
+			OperationTime: 100,
+		}
+
+		result, err := ComputeTask(task)
+		assert.NoError(t, err)
+		assert.Equal(t, 50.0, result)
+	})
+
+	t.Run("Division", func(t *testing.T) {
+		task := models.TaskGet{
+			Arg1:          10,
+			Arg2:          5,
+			Operation:     "/",
+			OperationTime: 100,
+		}
+
+		result, err := ComputeTask(task)
+		assert.NoError(t, err)
+		assert.Equal(t, 2.0, result)
+	})
+
+	t.Run("Division by zero", func(t *testing.T) {
+		task := models.TaskGet{
+			Arg1:          10,
+			Arg2:          0,
+			Operation:     "/",
+			OperationTime: 100,
+		}
+
+		result, err := ComputeTask(task)
+		assert.Error(t, err)
+		assert.Equal(t, ErrDivisionByZero, err)
+		assert.Equal(t, 0.0, result)
+	})
+
+	t.Run("Invalid operation", func(t *testing.T) {
+		task := models.TaskGet{
+			Arg1:          10,
+			Arg2:          5,
+			Operation:     "%",
+			OperationTime: 100,
+		}
+
+		result, err := ComputeTask(task)
+		assert.Error(t, err)
+		assert.Equal(t, ErrInvalidOperation, err)
+		assert.Equal(t, 0.0, result)
+	})
+
+	t.Run("Operation time", func(t *testing.T) {
+		task := models.TaskGet{
+			Arg1:          10,
+			Arg2:          5,
+			Operation:     "+",
+			OperationTime: 100,
+		}
+
+		start := time.Now()
+		_, err := ComputeTask(task)
+		duration := time.Since(start)
+
+		assert.NoError(t, err)
+		assert.True(t, duration >= 100*time.Millisecond, "Operation should take at least 100ms")
+	})
 }
