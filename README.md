@@ -49,51 +49,29 @@
 #### Язык программирования:
 - **Go** (версия 1.23.2)
 
+#### Библиотеки:
+- **[github.com/google/uuid](https://github.com/google/uuid)**: Для генерации уникальных идентификаторов (UUID).
+- **[github.com/gorilla/mux](https://github.com/gorilla/mux)**: Для создания HTTP-роутера и обработки запросов.
+- **[github.com/joho/godotenv](https://github.com/joho/godotenv)**: Для загрузки переменных окружения из файла `.env`.
+- **[github.com/stretchr/testify](https://github.com/stretchr/testify)**: Для написания unit-тестов.
+- **[go.uber.org/zap](https://go.uber.org/zap)**: Для структурированного и производительного логирования.
+
 
 ## Структура проекта 
 
 - **`cmd/`**
   - **`agent/`**
-    - **`main.go`**
   - **`orchestrator/`**
-    - **`main.go`**
 - **`internal/`**
   - **`agent/`**
-    - **`agent.go`**
   - **`orchestrator/`**
     - **`parser/`**
-      - **`parser.go`**
-      - **`ast.go`**
-      - **`errors.go`**
-      - **`node.go`**
     - **`server/`**
-      - **`server.go`**
-      - **`taskposthandler.go`**
-      - **`taskgethandler.go`**
-      - **`calchandler.go`**
-      - **`expressionshandler.go`**
-      - **`expressionhandler.go`**
     - **`test/`**
-      - **`calchandler_test.go`**
-      - **`taskgethandler_test.go`**
-      - **`taskposthandler_test.go`**
   - **`models/`**
-    - **`expression.go`**
-    - **`expressions.go`**
-    - **`badresponse.go`**
-    - **`goodresponse.go`**
-    - **`id.go`**
-    - **`request.go`**
-    - **`taskget.go`**
-    - **`taskpost.go`** 
-
 - **`pkg/`**
   - **`calculation/`**
-    - **`calculation.go`**
-    - **`errors.go`**
-    - **`calculation_test.go`**
-  - **`logger/`**  
-    - **`logger.go`**
+  - **`logger/`** 
 
 ## Quick start
 
@@ -109,6 +87,13 @@ cd FinalTaskFirstSprint
 
 Теперь вы можете запустить проект , но для этогт нужно чтобы был установлен Go версии 1.23.2
 Ссылка для скачивания: [Go Download](https://go.dev/doc/install)
+
+Перед запуском агента и оркестратора , воспользуйтесь командой
+
+```bash
+go mod download
+
+```
 
 Сначала запускается оркестратор , затем запускается агент
 
