@@ -85,7 +85,7 @@
 
 Для начала нужно склонировать репозиторий командой 
 ```
-git clone git@github.com:VladimirGladky/FinalTaskFirstSprint.git
+git clone https://github.com/VladimirGladky/FinalTaskFirstSprint.git
 ```
 
 После этого вам нужно перейти в папку с проектом 
