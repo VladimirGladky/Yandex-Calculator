@@ -5,26 +5,34 @@
 ### Оркестратор
 Оркестратор принимает на вход арифметическое выражение и переводит её в набор последовательных задач и обеспечивает порядок их выполнения. Это производится с помощью дерева(ast). У выражения есть своя структура Expression , в которую включены поля для хранения последовательных задач и узлов дерева. Также оркестратор хранит все выражения , которые вы ему отправляете.
 У оркестратора есть 5 endpoint-ов:
-
+```
 1) curl --location 'localhost/api/v1/calculate' \
 --header 'Content-Type: application/json' \
 --data '{
 "expression": <строка с выражение>
-}'    
+}' 
+```
 С помощью данного эндпоинта вы отправляете выражение оркестратору , которое он обрабатывает и сохраняет себе
-
+```
 2) curl --location 'localhost/api/v1/expressions'    
+```
 Этот эндпоинт можно использовать для получения всего списка выражений
+```
 3) curl --location 'localhost/api/v1/expressions/:id'   
+```
 Этот можно использовать для получения конкретного выражения по id , который вы добавили ранее
-4) curl --location 'localhost/internal/task' ("GET")       
+```
+4) curl --location 'localhost/internal/task' ("GET")    
+```   
 Этот используется для получения задачи для выполенния
+```
 5) curl --location 'localhost/internal/task' \
 --header 'Content-Type: application/json' \
 --data '{
 "id": 1,
 "result": 2.5
 }'      
+```
 Этот отправляет решенную задачу
 
 Примеры использования эндпоинтов будут дальше
@@ -94,6 +102,27 @@ cd FinalTaskFirstSprint
 go mod download
 
 ```
+
+#### Установите переменные среды :
+
+для Linux/macOS:
+
+```bash
+export TIME_ADDITION_MS=200
+export TIME_SUBTRACTION_MS=200
+export TIME_MULTIPLICATIONS_MS=300
+export TIME_DIVISIONS_MS=400
+```
+
+для Windows:
+
+```bash
+set TIME_ADDITION_MS=200
+set TIME_SUBTRACTION_MS=200
+set TIME_MULTIPLICATIONS_MS=300
+set TIME_DIVISIONS_MS=400
+```
+
 
 Сначала запускается оркестратор , затем запускается агент
 

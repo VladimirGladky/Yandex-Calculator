@@ -10,10 +10,7 @@ import (
 func main() {
 	ctx := context.Background()
 	ctx, _ = logger.New(ctx)
-	err := godotenv.Load("local.env")
-	if err != nil {
-		logger.GetLoggerFromCtx(ctx).Error(ctx, "Error loading .env file")
-	}
+	_ = godotenv.Load("local.env")
 	agent := server.NewAgent(ctx)
 	logger.GetLoggerFromCtx(ctx).Info(ctx, "Agent started")
 	agent.Run()
