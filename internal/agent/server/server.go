@@ -1,14 +1,14 @@
 package server
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	task2 "github.com/VladimirGladky/FinalTaskFirstSprint/gen/proto/task"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/models"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/calculation"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"go.uber.org/zap"
-	"net/http"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"os"
 	"strconv"
 	"time"
@@ -17,6 +17,7 @@ import (
 type Agent struct {
 	ComputingPower int
 	ctx            context.Context
+	cl             task2.TaskManagementServiceClient
 }
 
 func NewAgent(ctx context.Context) *Agent {
@@ -31,33 +32,29 @@ func NewAgent(ctx context.Context) *Agent {
 }
 
 func (a *Agent) Run() {
+	conn, err := grpc.NewClient("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error connecting to orchestrator: %v", zap.Error(err))
+		return
+	}
+	defer conn.Close()
+
+	a.cl = task2.NewTaskManagementServiceClient(conn)
 	for i := 0; i < a.ComputingPower; i++ {
 		go func() {
 			for {
-				req, err1 := http.NewRequest("GET", "http://localhost:4040/internal/task", nil)
-				if err1 != nil {
-					logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error getting task: %v", zap.Error(err1))
-					time.Sleep(1 * time.Second)
-					continue
-				}
-				resp, err2 := http.DefaultClient.Do(req)
-				if err2 != nil {
-					logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error getting task: %v", zap.Error(err2))
-					time.Sleep(1 * time.Second)
-					continue
-				}
-				if resp.StatusCode == http.StatusNotFound {
-					logger.GetLoggerFromCtx(a.ctx).Info(a.ctx, "no task")
+				response, err := a.cl.TaskGet(a.ctx, &task2.TaskGetRequest{})
+				if err != nil {
+					logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error getting task: %v", zap.Error(err))
 					time.Sleep(15 * time.Second)
 					continue
 				}
-				request := new(models.TaskGet)
-				err3 := json.NewDecoder(resp.Body).Decode(&request)
-				resp.Body.Close()
-				if err3 != nil {
-					logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error decoding task: %v", zap.Error(err3))
-					time.Sleep(1 * time.Second)
-					continue
+				request := &models.TaskGet{
+					Id:            response.Id,
+					Arg1:          float64(response.Arg1),
+					Arg2:          float64(response.Arg2),
+					Operation:     response.Operation,
+					OperationTime: int(response.OperationTime),
 				}
 				res, err4 := calculation.ComputeTask(*request)
 				if err4 != nil {
@@ -65,23 +62,15 @@ func (a *Agent) Run() {
 					time.Sleep(1 * time.Second)
 					continue
 				}
-				jsonData, err5 := json.Marshal(models.TaskPost{Id: request.Id, Result: res})
-				if err5 != nil {
-					logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error marshaling result: %v", zap.Error(err5))
+				logger.GetLoggerFromCtx(a.ctx).Info(a.ctx, "result computed", zap.Any("result", res))
+				_, err = a.cl.TaskPost(a.ctx, &task2.TaskPostRequest{
+					Id:     response.Id,
+					Result: float32(res),
+				})
+				if err != nil {
+					logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error sending result: %v", zap.Error(err))
 					return
 				}
-				logger.GetLoggerFromCtx(a.ctx).Info(a.ctx, "result sent", zap.String("id", request.Id), zap.Float64("result", res))
-				req, err := http.NewRequest("POST", "http://localhost:4040/internal/task", bytes.NewBuffer(jsonData))
-				if err != nil {
-					logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error sending result: %v", zap.Error(err))
-					continue
-				}
-				resp, err = http.DefaultClient.Do(req)
-				if err != nil {
-					logger.GetLoggerFromCtx(a.ctx).Error(a.ctx, "error sending result: %v", zap.Error(err))
-					continue
-				}
-				resp.Body.Close()
 			}
 		}()
 	}

@@ -11,7 +11,7 @@ func ExpressionsHandler(o *Orchestrator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				logger.GetLoggerFromCtx(o.ctx).Error(o.ctx, "Internal server error")
+				logger.GetLoggerFromCtx(o.Ctx).Error(o.Ctx, "Internal server error")
 				w.WriteHeader(http.StatusInternalServerError)
 				err0 := json.NewEncoder(w).Encode(models2.BadResponse{Error: "Internal server error1"})
 				if err0 != nil {
@@ -23,7 +23,7 @@ func ExpressionsHandler(o *Orchestrator) http.HandlerFunc {
 		}()
 		if r.Method != http.MethodGet {
 			//405
-			logger.GetLoggerFromCtx(o.ctx).Info(o.ctx, "You can use only GET method")
+			logger.GetLoggerFromCtx(o.Ctx).Info(o.Ctx, "You can use only GET method")
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			err10 := json.NewEncoder(w).Encode(models2.BadResponse{Error: "You can use only GET method"})
 			if err10 != nil {
@@ -42,12 +42,12 @@ func ExpressionsHandler(o *Orchestrator) http.HandlerFunc {
 		}
 		err := json.NewEncoder(w).Encode(models2.Expressions{Expressions: expressions})
 		if err != nil {
-			logger.GetLoggerFromCtx(o.ctx).Error(o.ctx, "Internal server error")
+			logger.GetLoggerFromCtx(o.Ctx).Error(o.Ctx, "Internal server error")
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(`{"error": "Internal server error4"}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		logger.GetLoggerFromCtx(o.ctx).Info(o.ctx, "Expressions sent")
+		logger.GetLoggerFromCtx(o.Ctx).Info(o.Ctx, "Expressions sent")
 	}
 }

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package task;
+
+option go_package = "./proto/task";
+
+service TaskManagementService {
+  rpc TaskGet(TaskGetRequest) returns (TaskGetResponse);
+  rpc TaskPost(TaskPostRequest) returns (TaskPostResponse);
+}
+
+message TaskGetRequest {
+}
+
+message TaskGetResponse {
+  string id = 1;
+  float arg1 = 2;
+  float arg2 = 3;
+  string operation = 4;
+  int32 operation_time = 5;
+}
+
+message TaskPostRequest {
+  string id = 1;
+  float result = 2;
+}
+
+message TaskPostResponse {
+}

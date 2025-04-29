@@ -22,11 +22,11 @@
 ```
 Этот можно использовать для получения конкретного выражения по id , который вы добавили ранее
 ```
-4) curl --location 'localhost/internal/task' ("GET")    
+4) curl --location 'localhost/internal/taskGet' ("GET")    
 ```   
 Этот используется для получения задачи для выполенния
 ```
-5) curl --location 'localhost/internal/task' \
+5) curl --location 'localhost/internal/taskGet' \
 --header 'Content-Type: application/json' \
 --data '{
 "id": 1,
@@ -39,7 +39,7 @@
 
 ### Агент
 Агент запускает несколько горутин , которые задаются переменной среды COMPUTING_POWER, каждая горутина выступает в роли независемого вычислителя.
-Каждую секунду агент отправляет запросы оркестратору с помощью ручки GET internal/task. Если он получает задачу , то вычисляет её и отправляет обратно оркестратору с помощью POST internal/task. Если оркестратор отвечает, что в данный момент нет задачи для выполнения , то агент делает паузу на 15 секунд.
+Каждую секунду агент отправляет запросы оркестратору с помощью ручки GET internal/taskGet. Если он получает задачу , то вычисляет её и отправляет обратно оркестратору с помощью POST internal/taskGet. Если оркестратор отвечает, что в данный момент нет задачи для выполнения , то агент делает паузу на 15 секунд.
 
 ## Схема работы
 
@@ -260,12 +260,12 @@ curl --location '127.0.0.1:4040/api/v1/expressions/56e8677e-a058-485d-bc2c-342af
 метод GET
 
 ```bash
-'127.0.0.1:4040/internal/task' 
+'127.0.0.1:4040/internal/taskGet' 
 ```
 
 cURL команда с ответом сервиса 200:
 ```bash
-curl --location '127.0.0.1:4040/internal/task'
+curl --location '127.0.0.1:4040/internal/taskGet'
 ```
 
 Ответ:
@@ -282,12 +282,12 @@ curl --location '127.0.0.1:4040/internal/task'
 curl команда с ответом сервиса 404:
 
 ```bash
-curl --location '127.0.0.1:4040/internal/task'
+curl --location '127.0.0.1:4040/internal/taskGet'
 ```
 
 Ответ:
 ```bash
-{"error":"No task available"}
+{"error":"No taskGet available"}
 ```
 
 Мой телеграм https://t.me/smoothhhhhhh

@@ -2,16 +2,64 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/gen/proto/task"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/server"
+	gr "github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/grpc"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"log"
+	"net"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	wg := &sync.WaitGroup{}
 	ctx, _ = logger.New(ctx)
 	_ = godotenv.Load("local.env")
-	srv := server.New(ctx)
-	logger.GetLoggerFromCtx(ctx).Info(ctx, "Orchestrator started")
-	srv.Run()
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s", "localhost:8080"))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	orch := server.New(ctx)
+	service := gr.NewService(orch)
+	grpcServer := grpc.NewServer()
+	task.RegisterTaskManagementServiceServer(grpcServer, service)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		logger.GetLoggerFromCtx(ctx).Info(ctx, "Orchestrator started")
+		if err := orch.Run(); err != nil {
+			logger.GetLoggerFromCtx(ctx).Error(ctx, "Orchestrator error", zap.Error(err))
+			cancel()
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.GetLoggerFromCtx(ctx).Error(ctx, "Orchestrator error", zap.Error(err))
+			cancel()
+		}
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	select {
+	case <-sigCh:
+		logger.GetLoggerFromCtx(ctx).Info(ctx, "Forced shutdown")
+		grpcServer.GracefulStop()
+		cancel()
+	case <-ctx.Done():
+		logger.GetLoggerFromCtx(ctx).Info(ctx, "Graceful shutdown")
+	}
+
+	wg.Wait()
 }

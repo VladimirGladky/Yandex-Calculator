@@ -26,9 +26,9 @@ func ConfigFromEnv() *Config {
 }
 
 type Orchestrator struct {
-	ctx            context.Context
+	Ctx            context.Context
 	config         *Config
-	mu             sync.Mutex
+	Mu             sync.Mutex
 	ExpressionsMap map[string]*models.Expression
 	TasksArr       []*models.Task
 	TasksMap       map[string]*models.Task
@@ -37,7 +37,7 @@ type Orchestrator struct {
 
 func New(ctx context.Context) *Orchestrator {
 	return &Orchestrator{
-		ctx:            ctx,
+		Ctx:            ctx,
 		config:         ConfigFromEnv(),
 		ExpressionsMap: make(map[string]*models.Expression),
 		TasksMap:       make(map[string]*models.Task),
@@ -50,8 +50,6 @@ func (o *Orchestrator) Run() error {
 	router.HandleFunc("/api/v1/calculate", CalcHandler(o))
 	router.HandleFunc("/api/v1/expressions", ExpressionsHandler(o))
 	router.HandleFunc("/api/v1/expressions/{id}", ExpressionHandler(o))
-	router.HandleFunc("/internal/task", TaskHandlerPost(o)).Methods("POST")
-	router.HandleFunc("/internal/task", TaskHandlerGet(o)).Methods("GET")
 	return http.ListenAndServe(":"+o.config.Addr, router)
 }
 
