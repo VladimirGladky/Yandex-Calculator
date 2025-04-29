@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Красивый калькулятор</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="calculator">
+    <h2>Калькулятор выражений</h2>
+    <input type="text" id="expression" placeholder="Введите выражение, например: 2+2*3">
+    <button onclick="calculate()">
+        <span>Вычислить</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
+    <div id="result"></div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
