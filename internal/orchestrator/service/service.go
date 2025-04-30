@@ -1,59 +1,73 @@
-package server
+package service
 
 import (
-	"context"
 	"fmt"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/models"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/parser"
-	"github.com/gorilla/mux"
-	"net/http"
+	"github.com/google/uuid"
 	"os"
 	"strconv"
 	"sync"
 )
 
-type Config struct {
-	Addr string
-}
-
-func ConfigFromEnv() *Config {
-	config := new(Config)
-	config.Addr = os.Getenv("PORT")
-	if config.Addr == "" {
-		config.Addr = "4040"
-	}
-	return config
-}
-
-type Orchestrator struct {
-	Ctx            context.Context
-	config         *Config
+type Service struct {
 	Mu             sync.Mutex
 	ExpressionsMap map[string]*models.Expression
-	TasksArr       []*models.Task
 	TasksMap       map[string]*models.Task
+	TasksArr       []*models.Task
 	TaskCounter    int
 }
 
-func New(ctx context.Context) *Orchestrator {
-	return &Orchestrator{
-		Ctx:            ctx,
-		config:         ConfigFromEnv(),
+func NewService() *Service {
+	return &Service{
 		ExpressionsMap: make(map[string]*models.Expression),
 		TasksMap:       make(map[string]*models.Task),
 		TasksArr:       make([]*models.Task, 0),
 	}
 }
 
-func (o *Orchestrator) Run() error {
-	router := mux.NewRouter()
-	router.HandleFunc("/api/v1/calculate", CalcHandler(o))
-	router.HandleFunc("/api/v1/expressions", ExpressionsHandler(o))
-	router.HandleFunc("/api/v1/expressions/{id}", ExpressionHandler(o))
-	return http.ListenAndServe(":"+o.config.Addr, router)
+func (s *Service) GetExpression(id string) (*models.Expression, error) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	if _, ok := s.ExpressionsMap[id]; !ok {
+		return nil, fmt.Errorf("expression with id %s not found", id)
+	}
+	return s.ExpressionsMap[id], nil
 }
 
-func (o *Orchestrator) SplitTasks(expr *models.Expression) {
+func (s *Service) CreateExpression(expr string) (*models.Expression, error) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+
+	ast, err := parser.BuildExpressionTree(expr)
+	if err != nil {
+		return nil, err
+	}
+
+	id := uuid.New().String()
+	expression := &models.Expression{
+		Id:     id,
+		Status: "in progress",
+		Ast:    ast,
+	}
+	s.ExpressionsMap[id] = expression
+	s.SplitTasks(s.ExpressionsMap[id])
+	return expression, nil
+}
+
+func (s *Service) GetExpressions() []models.Expression {
+	expressions := make([]models.Expression, 0, len(s.ExpressionsMap))
+	for _, v := range s.ExpressionsMap {
+		if v.Ast != nil && v.Ast.IsLeaf {
+			v.Status = "done"
+			v.Result = v.Ast.Value
+		}
+		expressions = append(expressions, *v)
+	}
+	return expressions
+}
+
+func (s *Service) SplitTasks(expression *models.Expression) {
 	var visitNode func(node *parser.ExpressionNode)
 	visitNode = func(node *parser.ExpressionNode) {
 		if node == nil || node.IsLeaf {
@@ -64,13 +78,13 @@ func (o *Orchestrator) SplitTasks(expr *models.Expression) {
 		visitNode(node.Right)
 
 		if node.Left != nil && node.Right != nil && node.Left.IsLeaf && node.Right.IsLeaf && !node.TaskScheduled {
-			o.TaskCounter++
-			taskID := fmt.Sprintf("%d", o.TaskCounter)
+			s.TaskCounter++
+			taskID := fmt.Sprintf("%d", s.TaskCounter)
 			opTime := getOperationTime(node.Operator)
 
 			task := &models.Task{
 				ID:            taskID,
-				ExprID:        expr.Id,
+				ExprID:        expression.Id,
 				Arg1:          node.Left.Value,
 				Arg2:          node.Right.Value,
 				Operation:     node.Operator,
@@ -79,12 +93,12 @@ func (o *Orchestrator) SplitTasks(expr *models.Expression) {
 			}
 
 			node.TaskScheduled = true
-			o.TasksMap[taskID] = task
-			o.TasksArr = append(o.TasksArr, task)
+			s.TasksMap[taskID] = task
+			s.TasksArr = append(s.TasksArr, task)
 		}
 	}
 
-	visitNode(expr.Ast)
+	visitNode(expression.Ast)
 }
 
 func getOperationTime(operator string) int {

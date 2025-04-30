@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/gen/proto/task"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/server"
+	service2 "github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/service"
 	gr "github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/grpc"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/http"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -28,7 +29,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	orch := server.New(ctx)
+	srv := service2.NewService()
+	orch := http.New(ctx, srv)
 	service := gr.NewService(orch)
 	grpcServer := grpc.NewServer()
 	task.RegisterTaskManagementServiceServer(grpcServer, service)

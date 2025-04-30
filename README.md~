@@ -43,11 +43,11 @@
 
 ## Схема работы
 
-![img_2.png](pkg/assets/image/img_2.png)
+![img_2.png](pkg/schemeimage/img_2.png)
 
 Также вот так разбивается выражение 2+2×2+2 в дерево в оркестраторе:
 
-![img_1.png](pkg/assets/image/img_1.png)
+![img_1.png](pkg/schemeimage/img_1.png)
 
 Схема иллюстрирует то как работает агент и оркестратор между собой , то что я описывал раньше
 
