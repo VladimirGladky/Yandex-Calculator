@@ -26,6 +26,20 @@ func NewService() *Service {
 	}
 }
 
+func (s *Service) Login(lp *models.Login) (string, error) {
+	if err := lp.Validate(); err != nil {
+		return "", err
+	}
+	return "", fmt.Errorf("wrong login or password")
+}
+
+func (s *Service) Register(rp *models.RegisterRequest) error {
+	if err := rp.Validate(); err != nil {
+		return err
+	}
+	return fmt.Errorf("user already exists")
+}
+
 func (s *Service) GetExpression(id string) (*models.Expression, error) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()

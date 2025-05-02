@@ -13,12 +13,24 @@ type Logger struct {
 	l *zap.Logger
 }
 
-func (l Logger) Info(ctx context.Context, msg string, fields ...zap.Field) {
+func (l Logger) Info(msg string, fields ...zap.Field) {
 	l.l.Info(msg, fields...)
 }
 
-func (l Logger) Error(ctx context.Context, msg string, fields ...zap.Field) {
+func (l Logger) Error(msg string, fields ...zap.Field) {
 	l.l.Error(msg, fields...)
+}
+
+func (l Logger) Debug(msg string, fields ...zap.Field) {
+	l.l.Debug(msg, fields...)
+}
+
+func (l Logger) Warn(msg string, fields ...zap.Field) {
+	l.l.Warn(msg, fields...)
+}
+
+func (l Logger) Fatal(msg string, fields ...zap.Field) {
+	l.l.Fatal(msg, fields...)
 }
 
 func New(ctx context.Context) (context.Context, error) {

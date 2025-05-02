@@ -1,4 +1,4 @@
-package grpc
+package taskgRPC
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/http"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type Service struct {
@@ -19,6 +20,10 @@ func NewService(orchestrator *http.Orchestrator) *Service {
 	}
 }
 
+func Register(s *grpc.Server, orchestrator *http.Orchestrator) {
+	task2.RegisterTaskManagementServiceServer(s, NewService(orchestrator))
+}
+
 func (s *Service) TaskGet(context.Context, *task2.TaskGetRequest) (*task2.TaskGetResponse, error) {
 	s.orchestrator.Service.Mu.Lock()
 	defer s.orchestrator.Service.Mu.Unlock()
@@ -30,7 +35,7 @@ func (s *Service) TaskGet(context.Context, *task2.TaskGetRequest) (*task2.TaskGe
 	if expr, exists := s.orchestrator.Service.ExpressionsMap[taskGet.ExprID]; exists {
 		expr.Status = "in_progress"
 	}
-	logger.GetLoggerFromCtx(s.orchestrator.Ctx).Info(s.orchestrator.Ctx, "TaskGet", zap.Any("taskGet", &taskGet))
+	logger.GetLoggerFromCtx(s.orchestrator.Ctx).Info("TaskGet", zap.Any("taskGet", &taskGet))
 	return &task2.TaskGetResponse{Id: taskGet.ID, Arg1: float32(taskGet.Arg1), Arg2: float32(taskGet.Arg2), Operation: taskGet.Operation, OperationTime: int32(taskGet.OperationTime)}, nil
 }
 
@@ -39,7 +44,7 @@ func (s *Service) TaskPost(ctx context.Context, req *task2.TaskPostRequest) (*ta
 	taskPost, ok := s.orchestrator.Service.TasksMap[req.Id]
 	if !ok {
 		s.orchestrator.Service.Mu.Unlock()
-		logger.GetLoggerFromCtx(s.orchestrator.Ctx).Info(s.orchestrator.Ctx, "No taskPost available")
+		logger.GetLoggerFromCtx(s.orchestrator.Ctx).Info("No taskPost available")
 		return nil, nil
 	}
 	taskPost.Node.IsLeaf, taskPost.Node.Value = true, float64(req.Result)
@@ -50,7 +55,7 @@ func (s *Service) TaskPost(ctx context.Context, req *task2.TaskPostRequest) (*ta
 			expression.Status, expression.Result = "completed", expression.Ast.Value
 		}
 	}
-	logger.GetLoggerFromCtx(s.orchestrator.Ctx).Info(s.orchestrator.Ctx, "TaskPost", zap.Any("taskPost", &taskPost))
+	logger.GetLoggerFromCtx(s.orchestrator.Ctx).Info("TaskPost", zap.Any("taskPost", &taskPost))
 	s.orchestrator.Service.Mu.Unlock()
 	return &task2.TaskPostResponse{}, nil
 }
