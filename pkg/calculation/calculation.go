@@ -1,7 +1,7 @@
 package calculation
 
 import (
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/models"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/domain/models"
 	"time"
 )
 

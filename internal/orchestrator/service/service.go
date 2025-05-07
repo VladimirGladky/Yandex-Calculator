@@ -1,57 +1,118 @@
 package service
 
 import (
+	"context"
 	"fmt"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/models"
+	models2 "github.com/VladimirGladky/FinalTaskFirstSprint/internal/domain/models"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/parser"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/storage/sqlite"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/jwt"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 	"os"
 	"strconv"
 	"sync"
+	"time"
 )
 
-type Service struct {
-	Mu             sync.Mutex
-	ExpressionsMap map[string]*models.Expression
-	TasksMap       map[string]*models.Task
-	TasksArr       []*models.Task
-	TaskCounter    int
+type TaskServiceInterface interface {
+	Login(lp *models2.Login) (string, error)
+	Register(rp *models2.RegisterRequest) error
+	GetExpression(id string) (*models2.Expression, error)
+	CreateExpression(expr string) (*models2.Expression, error)
+	GetExpressions() []models2.Expression
+	SplitTasks(expression *models2.Expression)
 }
 
-func NewService() *Service {
+type Service struct {
+	storage        *sqlite.Storage
+	Mu             sync.Mutex
+	ExpressionsMap map[string]*models2.Expression
+	TasksMap       map[string]*models2.Task
+	TasksArr       []*models2.Task
+	TaskCounter    int
+	ctx            context.Context
+}
+
+func NewService(ctx context.Context, storage *sqlite.Storage) *Service {
 	return &Service{
-		ExpressionsMap: make(map[string]*models.Expression),
-		TasksMap:       make(map[string]*models.Task),
-		TasksArr:       make([]*models.Task, 0),
+		ExpressionsMap: make(map[string]*models2.Expression),
+		TasksMap:       make(map[string]*models2.Task),
+		TasksArr:       make([]*models2.Task, 0),
+		ctx:            ctx,
+		storage:        storage,
 	}
 }
 
-func (s *Service) Login(lp *models.Login) (string, error) {
+func (s *Service) Login(lp *models2.Login) (string, error) {
 	if err := lp.Validate(); err != nil {
+		logger.GetLoggerFromCtx(s.ctx).Error("error validating login: %v", zap.Error(err))
 		return "", err
 	}
-	return "", fmt.Errorf("wrong login or password")
-}
-
-func (s *Service) Register(rp *models.RegisterRequest) error {
-	if err := rp.Validate(); err != nil {
-		return err
+	user, err := s.storage.User(s.ctx, lp.Username)
+	if err != nil {
+		logger.GetLoggerFromCtx(s.ctx).Error("error getting user: %v", zap.Error(err))
+		return "", fmt.Errorf("error getting user: %v", err)
 	}
-	return fmt.Errorf("user already exists")
+	err = bcrypt.CompareHashAndPassword(user.PassHash, []byte(lp.Password))
+	if err != nil {
+		logger.GetLoggerFromCtx(s.ctx).Error("wrong login or password")
+		return "", fmt.Errorf("wrong login or password")
+	}
+	token, err := jwt.NewToken(user, 24*time.Hour)
+	if err != nil {
+		logger.GetLoggerFromCtx(s.ctx).Error("error creating token: %v", zap.Error(err))
+		return "", fmt.Errorf("error creating token: %v", err)
+	}
+	return token, nil
 }
 
-func (s *Service) GetExpression(id string) (*models.Expression, error) {
+func (s *Service) Register(rp *models2.RegisterRequest) error {
+	if err := rp.Validate(); err != nil {
+		logger.GetLoggerFromCtx(s.ctx).Error("error validating register request: %v", zap.Error(err))
+		return fmt.Errorf("error validating register request: %v", err)
+	}
+	passHash, err := bcrypt.GenerateFromPassword([]byte(rp.Password), bcrypt.DefaultCost)
+	if err != nil {
+		logger.GetLoggerFromCtx(s.ctx).Error("error hashing password: %v", zap.Error(err))
+		return fmt.Errorf("error hashing password: %v", err)
+	}
+	err = s.storage.SaveUser(s.ctx, &models2.User{
+		Email:    rp.Username,
+		PassHash: passHash,
+	})
+	if err != nil {
+		logger.GetLoggerFromCtx(s.ctx).Error("error saving user: %v", zap.Error(err))
+		return fmt.Errorf("error saving user: %v", err)
+	}
+	logger.GetLoggerFromCtx(s.ctx).Info("user registered")
+	return nil
+}
+
+func (s *Service) GetExpression(id string, token string) (*models2.Expression, error) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
+
+	_, err := jwt.GetEmailFromToken(token)
+	if err != nil {
+		return nil, err
+	}
 	if _, ok := s.ExpressionsMap[id]; !ok {
 		return nil, fmt.Errorf("expression with id %s not found", id)
 	}
 	return s.ExpressionsMap[id], nil
 }
 
-func (s *Service) CreateExpression(expr string) (*models.Expression, error) {
+func (s *Service) CreateExpression(expr string, token string) (*models2.Expression, error) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
+
+	_, err := jwt.GetEmailFromToken(token)
+	if err != nil {
+		return nil, err
+	}
 
 	ast, err := parser.BuildExpressionTree(expr)
 	if err != nil {
@@ -59,7 +120,7 @@ func (s *Service) CreateExpression(expr string) (*models.Expression, error) {
 	}
 
 	id := uuid.New().String()
-	expression := &models.Expression{
+	expression := &models2.Expression{
 		Id:     id,
 		Status: "in progress",
 		Ast:    ast,
@@ -69,8 +130,12 @@ func (s *Service) CreateExpression(expr string) (*models.Expression, error) {
 	return expression, nil
 }
 
-func (s *Service) GetExpressions() []models.Expression {
-	expressions := make([]models.Expression, 0, len(s.ExpressionsMap))
+func (s *Service) GetExpressions(token string) ([]models2.Expression, error) {
+	_, err := jwt.GetEmailFromToken(token)
+	if err != nil {
+		return nil, err
+	}
+	expressions := make([]models2.Expression, 0, len(s.ExpressionsMap))
 	for _, v := range s.ExpressionsMap {
 		if v.Ast != nil && v.Ast.IsLeaf {
 			v.Status = "done"
@@ -78,10 +143,10 @@ func (s *Service) GetExpressions() []models.Expression {
 		}
 		expressions = append(expressions, *v)
 	}
-	return expressions
+	return expressions, nil
 }
 
-func (s *Service) SplitTasks(expression *models.Expression) {
+func (s *Service) SplitTasks(expression *models2.Expression) {
 	var visitNode func(node *parser.ExpressionNode)
 	visitNode = func(node *parser.ExpressionNode) {
 		if node == nil || node.IsLeaf {
@@ -96,7 +161,7 @@ func (s *Service) SplitTasks(expression *models.Expression) {
 			taskID := fmt.Sprintf("%d", s.TaskCounter)
 			opTime := getOperationTime(node.Operator)
 
-			task := &models.Task{
+			task := &models2.Task{
 				ID:            taskID,
 				ExprID:        expression.Id,
 				Arg1:          node.Left.Value,

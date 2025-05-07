@@ -6,6 +6,7 @@ import (
 	orchestratorapp "github.com/VladimirGladky/FinalTaskFirstSprint/internal/app/orchestrator"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/config"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/service"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/storage/sqlite"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/http"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"go.uber.org/zap"
@@ -26,8 +27,13 @@ type App struct {
 func New(
 	cfg *config.Config,
 	ctx context.Context,
-	srv *service.Service,
 ) *App {
+	storage, err := sqlite.New("./storage.db")
+	if err != nil {
+		logger.GetLoggerFromCtx(ctx).Error("error creating storage: %v", zap.Error(err))
+		panic(err)
+	}
+	srv := service.NewService(ctx, storage)
 	orchestrator := http.New(ctx, srv, cfg)
 	orchApp := orchestratorapp.New(orchestrator)
 	grpcApp := grpcapp.New(cfg, orchestrator, ctx)

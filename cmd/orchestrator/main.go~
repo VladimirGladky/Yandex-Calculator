@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/app"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/config"
+	service2 "github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/service"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -17,6 +18,7 @@ func main() {
 		return
 	}
 	ctx, _ = logger.New(ctx)
-	application := app.New(cfg, ctx)
+	srv := service2.NewService(ctx)
+	application := app.New(cfg, ctx, srv)
 	application.MustRun()
 }

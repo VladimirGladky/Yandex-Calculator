@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    pass_hash BLOB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_expressions (
+    id TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL,
+    res TEXT NOT NULL,
+    status TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

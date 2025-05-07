@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS user_expressions;
+DROP TABLE IF EXISTS users;

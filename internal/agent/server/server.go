@@ -4,7 +4,7 @@ import (
 	"context"
 	task2 "github.com/VladimirGladky/FinalTaskFirstSprint/gen/proto/task"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/config"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/models"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/domain/models"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/calculation"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"go.uber.org/zap"

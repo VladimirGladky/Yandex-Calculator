@@ -1,10 +1,10 @@
 package calculation
 
 import (
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/domain/models"
 	"testing"
 	"time"
 
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 

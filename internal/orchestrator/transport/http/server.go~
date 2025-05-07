@@ -391,7 +391,7 @@ func ExpressionsHandler(o *Orchestrator) http.HandlerFunc {
 			return
 		}
 		exprs, err := o.Service.GetExpressions(tokenString)
-		err = json.NewEncoder(w).Encode(models.Expressions{Expressions: exprs})
+		err = json.NewEncoder(w).Encode(models.Expressions{Expressions:exprs})
 		if err != nil {
 			logger.GetLoggerFromCtx(o.Ctx).Error("Internal server error")
 			w.WriteHeader(http.StatusInternalServerError)
