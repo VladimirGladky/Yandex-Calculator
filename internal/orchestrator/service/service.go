@@ -20,9 +20,9 @@ import (
 type TaskServiceInterface interface {
 	Login(lp *models2.Login) (string, error)
 	Register(rp *models2.RegisterRequest) error
-	GetExpression(id string) (*models2.Expression, error)
-	CreateExpression(expr string) (*models2.Expression, error)
-	GetExpressions() []models2.Expression
+	GetExpression(id string, token string) (*models2.Expression, error)
+	CreateExpression(expr string, token string) (*models2.Expression, error)
+	GetExpressions(token string) ([]*models2.Expression, error)
 	SplitTasks(expression *models2.Expression)
 }
 
@@ -47,6 +47,7 @@ func NewService(ctx context.Context, storage *sqlite.Storage) *Service {
 }
 
 func (s *Service) Login(lp *models2.Login) (string, error) {
+	logger.GetLoggerFromCtx(s.ctx).Info("login")
 	if err := lp.Validate(); err != nil {
 		logger.GetLoggerFromCtx(s.ctx).Error("error validating login: %v", zap.Error(err))
 		return "", err
@@ -66,10 +67,12 @@ func (s *Service) Login(lp *models2.Login) (string, error) {
 		logger.GetLoggerFromCtx(s.ctx).Error("error creating token: %v", zap.Error(err))
 		return "", fmt.Errorf("error creating token: %v", err)
 	}
+	logger.GetLoggerFromCtx(s.ctx).Info("user logged in")
 	return token, nil
 }
 
 func (s *Service) Register(rp *models2.RegisterRequest) error {
+	logger.GetLoggerFromCtx(s.ctx).Info("register")
 	if err := rp.Validate(); err != nil {
 		logger.GetLoggerFromCtx(s.ctx).Error("error validating register request: %v", zap.Error(err))
 		return fmt.Errorf("error validating register request: %v", err)
@@ -95,21 +98,24 @@ func (s *Service) GetExpression(id string, token string) (*models2.Expression, e
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 
-	_, err := jwt.GetEmailFromToken(token)
+	email, err := jwt.GetEmailFromToken(token)
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := s.ExpressionsMap[id]; !ok {
-		return nil, fmt.Errorf("expression with id %s not found", id)
+	expression, err := s.storage.GetExpression(s.ctx, id, email)
+	if err != nil {
+		return nil, err
 	}
-	return s.ExpressionsMap[id], nil
+	logger.GetLoggerFromCtx(s.ctx).Info("expression got")
+	return expression, nil
 }
 
 func (s *Service) CreateExpression(expr string, token string) (*models2.Expression, error) {
+	logger.GetLoggerFromCtx(s.ctx).Info("create expression", zap.String("expression", expr))
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 
-	_, err := jwt.GetEmailFromToken(token)
+	email, err := jwt.GetEmailFromToken(token)
 	if err != nil {
 		return nil, err
 	}
@@ -125,25 +131,38 @@ func (s *Service) CreateExpression(expr string, token string) (*models2.Expressi
 		Status: "in progress",
 		Ast:    ast,
 	}
-	s.ExpressionsMap[id] = expression
-	s.SplitTasks(s.ExpressionsMap[id])
-	return expression, nil
-}
-
-func (s *Service) GetExpressions(token string) ([]models2.Expression, error) {
-	_, err := jwt.GetEmailFromToken(token)
+	err = s.storage.AddExpression(s.ctx, expression, email)
 	if err != nil {
 		return nil, err
 	}
-	expressions := make([]models2.Expression, 0, len(s.ExpressionsMap))
-	for _, v := range s.ExpressionsMap {
-		if v.Ast != nil && v.Ast.IsLeaf {
-			v.Status = "done"
-			v.Result = v.Ast.Value
-		}
-		expressions = append(expressions, *v)
+	s.ExpressionsMap[id] = expression
+	s.SplitTasks(expression)
+	logger.GetLoggerFromCtx(s.ctx).Info("expression created")
+	return expression, nil
+}
+
+func (s *Service) GetExpressions(token string) ([]*models2.Expression, error) {
+	email, err := jwt.GetEmailFromToken(token)
+	if err != nil {
+		return nil, err
 	}
+	expressions, err := s.storage.GetExpressions(s.ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	logger.GetLoggerFromCtx(s.ctx).Info("expressions got")
 	return expressions, nil
+}
+
+func (s *Service) UpdateExpression(expr *models2.Expression) error {
+	id := expr.Id
+	res := fmt.Sprintf("%f", expr.Result)
+	status := expr.Status
+	err := s.storage.UpdateExpression(s.ctx, res, status, id)
+	if err != nil {
+		return fmt.Errorf("error updating expression: %v", err)
+	}
+	return nil
 }
 
 func (s *Service) SplitTasks(expression *models2.Expression) {
@@ -181,25 +200,25 @@ func (s *Service) SplitTasks(expression *models2.Expression) {
 }
 
 func getOperationTime(operator string) int {
-	var time int
+	var t int
 	var err error
 
 	switch operator {
 	case "+":
-		time, err = strconv.Atoi(os.Getenv("TIME_ADDITION_MS"))
+		t, err = strconv.Atoi(os.Getenv("TIME_ADDITION_MS"))
 	case "-":
-		time, err = strconv.Atoi(os.Getenv("TIME_SUBTRACTION_MS"))
+		t, err = strconv.Atoi(os.Getenv("TIME_SUBTRACTION_MS"))
 	case "*":
-		time, err = strconv.Atoi(os.Getenv("TIME_MULTIPLICATIONS_MS"))
+		t, err = strconv.Atoi(os.Getenv("TIME_MULTIPLICATIONS_MS"))
 	case "/":
-		time, err = strconv.Atoi(os.Getenv("TIME_DIVISIONS_MS"))
+		t, err = strconv.Atoi(os.Getenv("TIME_DIVISIONS_MS"))
 	default:
-		time = 100
+		t = 100
 	}
 
 	if err != nil {
-		time = 100
+		t = 100
 	}
 
-	return time
+	return t
 }

@@ -32,7 +32,13 @@ func (a *Agent) Run() {
 		logger.GetLoggerFromCtx(a.ctx).Error("error connecting to orchestrator: %v", zap.Error(err))
 		return
 	}
-	defer conn.Close()
+	defer func(conn *grpc.ClientConn) {
+		err = conn.Close()
+		if err != nil {
+			logger.GetLoggerFromCtx(a.ctx).Error("error closing connection: %v", zap.Error(err))
+			return
+		}
+	}(conn)
 
 	a.cl = task2.NewTaskManagementServiceClient(conn)
 	for i := 0; i < a.cfg.ComputingPower; i++ {

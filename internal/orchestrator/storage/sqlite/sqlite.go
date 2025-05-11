@@ -39,6 +39,9 @@ func (s *Storage) SaveUser(ctx context.Context, user *models.User) error {
 	var q = `INSERT INTO users (email, pass_hash) VALUES ($1, $2)`
 	_, err := s.db.ExecContext(ctx, q, user.Email, user.PassHash)
 	if err != nil {
+		if err.Error() == "UNIQUE constraint failed: users.email" {
+			return fmt.Errorf("user with email %s already exists", user.Email)
+		}
 		return err
 	}
 	return nil
@@ -60,7 +63,7 @@ func (s *Storage) AddExpression(ctx context.Context, expression *models.Expressi
 	return nil
 }
 
-func (s *Storage) GetExpressions(ctx context.Context, email string) ([]models.Expression, error) {
+func (s *Storage) GetExpressions(ctx context.Context, email string) ([]*models.Expression, error) {
 	var q = `SELECT id FROM users WHERE email = $1`
 	var id int
 	err := s.db.QueryRowContext(ctx, q, email).Scan(&id)
@@ -72,7 +75,7 @@ func (s *Storage) GetExpressions(ctx context.Context, email string) ([]models.Ex
 	if err != nil {
 		return nil, err
 	}
-	var expressions []models.Expression
+	var expressions []*models.Expression
 	for rows.Next() {
 		var expression models.Expression
 		var res string
@@ -84,9 +87,9 @@ func (s *Storage) GetExpressions(ctx context.Context, email string) ([]models.Ex
 		if err != nil {
 			return nil, err
 		}
-		expressions = append(expressions, expression)
+		expressions = append(expressions, &expression)
 	}
-	return nil, nil
+	return expressions, nil
 }
 
 func (s *Storage) GetExpression(ctx context.Context, id, email string) (*models.Expression, error) {
@@ -108,4 +111,13 @@ func (s *Storage) GetExpression(ctx context.Context, id, email string) (*models.
 		return nil, err
 	}
 	return &expression, nil
+}
+
+func (s *Storage) UpdateExpression(ctx context.Context, res, status, id string) error {
+	var q = `UPDATE user_expressions SET res = $1, status = $2 WHERE id = $3`
+	_, err := s.db.ExecContext(ctx, q, res, status, id)
+	if err != nil {
+		return err
+	}
+	return nil
 }

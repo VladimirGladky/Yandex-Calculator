@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/config"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/http"
+	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/service"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/taskgRPC"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"go.uber.org/zap"
@@ -13,21 +13,19 @@ import (
 )
 
 type App struct {
-	GRPCsrv *grpc.Server
+	GRPCSrv *grpc.Server
 	cfg     *config.Config
 	ctx     context.Context
-	orch    *http.Orchestrator
 }
 
-func New(cfg *config.Config, orchestrator *http.Orchestrator, ctx context.Context) *App {
+func New(cfg *config.Config, service *service.Service, ctx context.Context) *App {
 	gRPC := grpc.NewServer()
-	taskgRPC.Register(gRPC, orchestrator)
+	taskgRPC.Register(gRPC, service)
 
 	return &App{
-		GRPCsrv: gRPC,
+		GRPCSrv: gRPC,
 		cfg:     cfg,
 		ctx:     ctx,
-		orch:    orchestrator,
 	}
 }
 
@@ -37,7 +35,7 @@ func (a *App) Run() error {
 		logger.GetLoggerFromCtx(a.ctx).Error("error listening: %v", zap.Error(err))
 		return err
 	}
-	if err = a.GRPCsrv.Serve(lis); err != nil {
+	if err = a.GRPCSrv.Serve(lis); err != nil {
 		logger.GetLoggerFromCtx(a.ctx).Error("error serving: %v", zap.Error(err))
 		return err
 	}

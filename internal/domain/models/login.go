@@ -16,7 +16,7 @@ type LoginResponse struct {
 }
 
 func (r *Login) Validate() error {
-	return validation.ValidateStruct(&r,
+	return validation.ValidateStruct(r,
 		validation.Field(&r.Username,
 			validation.Required,
 			validation.Length(3, 20),

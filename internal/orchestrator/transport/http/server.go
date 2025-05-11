@@ -6,24 +6,22 @@ import (
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/config"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/domain/models"
 	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/service"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strings"
 )
 
 type Orchestrator struct {
-	Service *service.Service
+	Service service.TaskServiceInterface
 	Ctx     context.Context
-	config  *config.Config
+	Config  *config.Config
 }
 
-func New(ctx context.Context, service *service.Service, cfg *config.Config) *Orchestrator {
+func New(ctx context.Context, service service.TaskServiceInterface, cfg *config.Config) *Orchestrator {
 	return &Orchestrator{
 		Ctx:     ctx,
-		config:  cfg,
+		Config:  cfg,
 		Service: service,
 	}
 }
@@ -49,34 +47,22 @@ func (o *Orchestrator) Run() error {
 	router.HandleFunc("/api/v1/expressions/{id}", ExpressionHandler(o))
 	router.HandleFunc("/api/v1/register", RegisterHandler(o))
 	router.HandleFunc("/api/v1/login", LoginHandler(o))
-	return http.ListenAndServe(o.config.OrchestratorHost+":"+o.config.OrchestratorPort, router)
+	return http.ListenAndServe(o.Config.OrchestratorHost+":"+o.Config.OrchestratorPort, router)
 }
 
 func LoginHandler(orchestrator *Orchestrator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error1")
 				w.WriteHeader(http.StatusInternalServerError)
-				err0 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Internal server error1"})
-				if err0 != nil {
-					logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error2")
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"error": "Internal server error2"}`))
-				}
+				_, _ = w.Write([]byte(`{"error": "Internal server error1"}`))
 				return
 			}
 		}()
 		if r.Method != http.MethodPost {
 			//405
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("You can use only POST method")
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			err10 := json.NewEncoder(w).Encode(models.BadResponse{Error: "You can use only POST method"})
-			if err10 != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error3")
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error3"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "You can use only POST method"}`))
 			return
 		}
 		request := new(models.Login)
@@ -84,33 +70,29 @@ func LoginHandler(orchestrator *Orchestrator) http.HandlerFunc {
 			err := Body.Close()
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error4"}`))
+				_, _ = w.Write([]byte(`{"error": "Internal server error4"}`))
 			}
 		}(r.Body)
 		err := json.NewDecoder(r.Body).Decode(request)
 		if err != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error5")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "Internal server error5"}`))
+			_, _ = w.Write([]byte(`{"error": "Internal server error5"}`))
 			return
 		}
 		token, err := orchestrator.Service.Login(request)
 		if err != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("token creating error", zap.Error(err))
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			err = json.NewEncoder(w).Encode(models.BadResponse{Error: err.Error()})
 			if err != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error6")
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error6"}`))
+				_, _ = w.Write([]byte(`{"error": "Internal server error6"}`))
 			}
 			return
 		}
 		err = json.NewEncoder(w).Encode(models.LoginResponse{Token: token})
 		if err != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error7")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "Internal server error7"}`))
+			_, _ = w.Write([]byte(`{"error": "Internal server error7"}`))
 			return
 		}
 	}
@@ -120,27 +102,15 @@ func RegisterHandler(orchestrator *Orchestrator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error1")
 				w.WriteHeader(http.StatusInternalServerError)
-				err0 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Internal server error1"})
-				if err0 != nil {
-					logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error2")
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"error": "Internal server error2"}`))
-				}
+				_, _ = w.Write([]byte(`{"error": "Internal server error1"}`))
 				return
 			}
 		}()
 		if r.Method != http.MethodPost {
 			//405
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("You can use only POST method")
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			err10 := json.NewEncoder(w).Encode(models.BadResponse{Error: "You can use only POST method"})
-			if err10 != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error3")
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error3"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "You can use only POST method"}`))
 			return
 		}
 		var req models.RegisterRequest
@@ -148,45 +118,31 @@ func RegisterHandler(orchestrator *Orchestrator) http.HandlerFunc {
 			err := Body.Close()
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				err1 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Internal server error4"})
-				if err1 != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"error": "Internal server error5"}`))
-				}
+				_, _ = w.Write([]byte(`{"error": "Internal server error4"}`))
 				return
 			}
 		}(r.Body)
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error6")
 			w.WriteHeader(http.StatusInternalServerError)
-			err12 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Internal server error6"})
-			if err12 != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error7")
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error7"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "Internal server error5"}`))
 			return
 		}
 		err = orchestrator.Service.Register(&req)
 		if err != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Error register", zap.Error(err))
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			err = json.NewEncoder(w).Encode(models.BadResponse{Error: err.Error()})
 			if err != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error8")
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error8"}`))
+				_, _ = w.Write([]byte(`{"error": "Internal server error6"}`))
 			}
 			return
 		}
-		logger.GetLoggerFromCtx(orchestrator.Ctx).Info("Register success")
 		w.WriteHeader(http.StatusOK)
 		err14 := json.NewEncoder(w).Encode(models.RegisterGoodResponse{Status: "success"})
 		if err14 != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error10")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "Internal server error10"}`))
+			_, _ = w.Write([]byte(`{"error": "Internal server error10"}`))
 			return
 		}
 	}
@@ -197,43 +153,27 @@ func CalcHandler(orchestrator *Orchestrator) http.HandlerFunc {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			w.WriteHeader(http.StatusUnauthorized)
-			err := json.NewEncoder(w).Encode(models.BadResponse{Error: "Unauthorized"})
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
 			return
 		}
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(models.BadResponse{Error: "Invalid token format"})
+			_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
 			return
 		}
 		tokenString := parts[1]
 		defer func() {
 			if rec := recover(); rec != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error1")
 				w.WriteHeader(http.StatusInternalServerError)
-				err0 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Internal server error1"})
-				if err0 != nil {
-					logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error2")
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"error": "Internal server error2"}`))
-				}
+				_, _ = w.Write([]byte(`{"error": "Internal server error1"}`))
 				return
 			}
 		}()
 		if r.Method != http.MethodPost {
 			//405
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("You can use only POST method")
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			err10 := json.NewEncoder(w).Encode(models.BadResponse{Error: "You can use only POST method"})
-			if err10 != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error3")
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error3"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "You can use only POST method"}`))
 			return
 		}
 		request := new(models.Request)
@@ -241,40 +181,37 @@ func CalcHandler(orchestrator *Orchestrator) http.HandlerFunc {
 			err := Body.Close()
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				err1 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Internal server error4"})
-				if err1 != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"error": "Internal server error5"}`))
-				}
+				_, _ = w.Write([]byte(`{"error": "Internal server error4"}`))
 				return
 			}
 		}(r.Body)
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			//400
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Bad request", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
-			err2 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Bad request"})
+			err2 := json.NewEncoder(w).Encode(models.BadResponse{Error: err.Error()})
 			if err2 != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error6"}`))
+				_, _ = w.Write([]byte(`{"error": "Internal server error7"}`))
 			}
 			return
 		}
 		expression, err := orchestrator.Service.CreateExpression(request.Expression, tokenString)
 		if err != nil {
 			//400
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Bad request", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
+			err3 := json.NewEncoder(w).Encode(models.BadResponse{Error: err.Error()})
+			if err3 != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error": "Internal server error8"}`))
+			}
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 		err4 := json.NewEncoder(w).Encode(models.ID{ID: expression.Id})
-		logger.GetLoggerFromCtx(orchestrator.Ctx).Info("Expression created", zap.String("id", expression.Id))
 		if err4 != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error8")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "Internal server error8"}`))
+			_, _ = w.Write([]byte(`{"error": "Internal server error9"}`))
 		}
 	}
 }
@@ -284,65 +221,46 @@ func ExpressionHandler(orchestrator *Orchestrator) http.HandlerFunc {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			w.WriteHeader(http.StatusUnauthorized)
-			err := json.NewEncoder(w).Encode(models.BadResponse{Error: "Unauthorized"})
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
 			return
 		}
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(models.BadResponse{Error: "Invalid token format"})
+			_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
 			return
 		}
 		tokenString := parts[1]
 		defer func() {
 			if rec := recover(); rec != nil {
-				logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error1")
 				w.WriteHeader(http.StatusInternalServerError)
-				err0 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Internal server error1"})
-				if err0 != nil {
-					logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error2")
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"error": "Internal server error2"}`))
-				}
+				_, _ = w.Write([]byte(`{"error": "Internal server error1"}`))
 				return
 			}
 		}()
 		if r.Method != http.MethodGet {
 			//405
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("You can use only GET method")
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			err10 := json.NewEncoder(w).Encode(models.BadResponse{Error: "You can use only GET method"})
-			if err10 != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error3"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "You can use only GET method"}`))
 			return
 		}
 		vars := mux.Vars(r)
 		id, ok := vars["id"]
 		if !ok {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("ID is missing")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(models.BadResponse{Error: "ID is missing"})
+			_, _ = w.Write([]byte(`{"error": "Id not found"}`))
 			return
 		}
 		expression, check := orchestrator.Service.GetExpression(id, tokenString)
 		if check != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Expression not found", zap.String("id", id))
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(models.BadResponse{Error: "Expression not found"})
+			_, _ = w.Write([]byte(`{"error": "Expression not found"}`))
 			return
 		}
 		err := json.NewEncoder(w).Encode(models.Expression{Id: expression.Id, Status: expression.Status, Result: expression.Result})
-		logger.GetLoggerFromCtx(orchestrator.Ctx).Info("Expression found", zap.String("id", expression.Id), zap.String("status", expression.Status), zap.Float64("result", expression.Result))
 		if err != nil {
-			logger.GetLoggerFromCtx(orchestrator.Ctx).Error("Internal server error4")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "Internal server error4"}`))
+			_, _ = w.Write([]byte(`{"error": "Internal server error2"}`))
 			return
 		}
 	}
@@ -353,52 +271,36 @@ func ExpressionsHandler(o *Orchestrator) http.HandlerFunc {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			w.WriteHeader(http.StatusUnauthorized)
-			err := json.NewEncoder(w).Encode(models.BadResponse{Error: "Unauthorized"})
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
 			return
 		}
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(models.BadResponse{Error: "Invalid token format"})
+			_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
 			return
 		}
 		tokenString := parts[1]
 		defer func() {
 			if rec := recover(); rec != nil {
-				logger.GetLoggerFromCtx(o.Ctx).Error("Internal server error")
 				w.WriteHeader(http.StatusInternalServerError)
-				err0 := json.NewEncoder(w).Encode(models.BadResponse{Error: "Internal server error1"})
-				if err0 != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"error": "Internal server error2"}`))
-				}
+				_, _ = w.Write([]byte(`{"error": "Internal server error1"}`))
 				return
 			}
 		}()
 		if r.Method != http.MethodGet {
 			//405
-			logger.GetLoggerFromCtx(o.Ctx).Info("You can use only GET method")
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			err10 := json.NewEncoder(w).Encode(models.BadResponse{Error: "You can use only GET method"})
-			if err10 != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error": "Internal server error3"}`))
-			}
+			_, _ = w.Write([]byte(`{"error": "You can use only GET method"}`))
 			return
 		}
-		exprs, err := o.Service.GetExpressions(tokenString)
-		err = json.NewEncoder(w).Encode(models.Expressions{Expressions: exprs})
+		expressions, err := o.Service.GetExpressions(tokenString)
+		err = json.NewEncoder(w).Encode(models.Expressions{Expressions: expressions})
 		if err != nil {
-			logger.GetLoggerFromCtx(o.Ctx).Error("Internal server error")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "Internal server error4"}`))
+			_, _ = w.Write([]byte(`{"error": "Internal server error2"}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		logger.GetLoggerFromCtx(o.Ctx).Info("Expressions sent")
 	}
 }

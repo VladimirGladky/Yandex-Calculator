@@ -17,7 +17,7 @@ import (
 )
 
 type App struct {
-	GRPCsrv      *grpcapp.App
+	gRPCServer   *grpcapp.App
 	Orchestrator *orchestratorapp.App
 	ctx          context.Context
 	wg           sync.WaitGroup
@@ -28,18 +28,18 @@ func New(
 	cfg *config.Config,
 	ctx context.Context,
 ) *App {
-	storage, err := sqlite.New("./storage.db")
+	storage, err := sqlite.New("./storage/expr.db")
 	if err != nil {
 		logger.GetLoggerFromCtx(ctx).Error("error creating storage: %v", zap.Error(err))
 		panic(err)
 	}
 	srv := service.NewService(ctx, storage)
 	orchestrator := http.New(ctx, srv, cfg)
-	orchApp := orchestratorapp.New(orchestrator)
-	grpcApp := grpcapp.New(cfg, orchestrator, ctx)
+	orchestratorApp := orchestratorapp.New(orchestrator)
+	grpcApp := grpcapp.New(cfg, srv, ctx)
 	return &App{
-		GRPCsrv:      grpcApp,
-		Orchestrator: orchApp,
+		gRPCServer:   grpcApp,
+		Orchestrator: orchestratorApp,
 		ctx:          ctx,
 	}
 }
@@ -65,7 +65,7 @@ func (a *App) Run() error {
 	go func() {
 		defer a.wg.Done()
 		logger.GetLoggerFromCtx(a.ctx).Info("gRPC server started")
-		if err := a.GRPCsrv.Run(); err != nil {
+		if err := a.gRPCServer.Run(); err != nil {
 			errCh <- err
 			a.cancel()
 		}
@@ -89,7 +89,7 @@ func (a *App) Run() error {
 func (a *App) Stop() {
 	logger.GetLoggerFromCtx(a.ctx).Info("stopping app")
 	a.cancel()
-	a.GRPCsrv.GRPCsrv.GracefulStop()
+	a.gRPCServer.GRPCSrv.GracefulStop()
 	a.wg.Wait()
 	logger.GetLoggerFromCtx(a.ctx).Info("app stopped")
 }

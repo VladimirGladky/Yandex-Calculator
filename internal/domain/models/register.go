@@ -16,15 +16,15 @@ type RegisterGoodResponse struct {
 }
 
 func (r *RegisterRequest) Validate() error {
-	return validation.ValidateStruct(&r,
+	return validation.ValidateStruct(r,
 		validation.Field(&r.Username,
-			validation.Required,
-			validation.Length(3, 20),
-			is.Alphanumeric,
+			validation.Required.Error("username is required"),
+			validation.Length(3, 20).Error("must be between 3 and 20 characters"),
+			is.Alphanumeric.Error("must be alphanumeric"),
 		),
 		validation.Field(&r.Password,
-			validation.Required,
-			validation.Length(8, 64),
+			validation.Required.Error("password is required"),
+			validation.Length(8, 64).Error("must be between 8 and 64 characters"),
 			validation.Match(regexp.MustCompile(`[!@#$%^&*]`)).Error("must contain a special char"),
 		),
 	)

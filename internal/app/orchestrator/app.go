@@ -5,17 +5,17 @@ import (
 )
 
 type App struct {
-	orch *http.Orchestrator
+	orchestrator *http.Orchestrator
 }
 
 func New(orchestrator *http.Orchestrator) *App {
 	return &App{
-		orch: orchestrator,
+		orchestrator: orchestrator,
 	}
 }
 
 func (a *App) Run() error {
-	if err := a.orch.Run(); err != nil {
+	if err := a.orchestrator.Run(); err != nil {
 		return err
 	}
 	return nil
