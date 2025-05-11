@@ -1,4 +1,0 @@
-orchestrator_host: 127.0.0.1
-orchestrator_port: 4040
-grpc_port: 4041
-grpc_host: 127.0.0.1
