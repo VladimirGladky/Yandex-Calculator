@@ -3,10 +3,11 @@ package grpcapp
 import (
 	"context"
 	"fmt"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/config"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/service"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/taskgRPC"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/config"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/orchestrator/service"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/orchestrator/transport/taskgRPC"
+	"github.com/VladimirGladky/Yandex-Calculator/pkg/logger"
+
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"net"

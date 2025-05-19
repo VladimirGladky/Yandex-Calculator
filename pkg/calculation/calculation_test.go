@@ -1,7 +1,7 @@
 package calculation
 
 import (
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/domain/models"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/domain/models"
 	"testing"
 	"time"
 

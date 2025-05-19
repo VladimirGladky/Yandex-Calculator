@@ -1,7 +1,7 @@
 package suite
 
 import (
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/transport/http"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/orchestrator/transport/http"
 	"testing"
 )
 

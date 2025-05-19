@@ -2,7 +2,7 @@ package jwt
 
 import (
 	"fmt"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/domain/models"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/domain/models"
 	"github.com/golang-jwt/jwt/v5"
 	"os"
 	"time"

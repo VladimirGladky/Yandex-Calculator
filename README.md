@@ -329,12 +329,12 @@ npx serve
 
 Для начала нужно склонировать репозиторий командой 
 ```
-git clone https://github.com/VladimirGladky/FinalTaskFirstSprint.git
+git clone https://github.com/VladimirGladky/Yandex-Calculator.git
 ```
 
-После этого вам нужно перейти в папку с проектом 
+После этого вам нужно перейти в папку с проектом
 ```
-cd FinalTaskFirstSprint
+cd Yandex-Calculator
 ```
 
 Теперь вы можете запустить проект , но для этогт нужно чтобы был установлен Go версии 1.23.2

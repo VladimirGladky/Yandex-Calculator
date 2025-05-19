@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/app"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/config"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/pkg/logger"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/app"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/config"
+	"github.com/VladimirGladky/Yandex-Calculator/pkg/logger"
 	"go.uber.org/zap"
 )
 

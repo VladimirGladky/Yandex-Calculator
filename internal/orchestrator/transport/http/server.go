@@ -3,9 +3,9 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/config"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/domain/models"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/service"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/config"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/domain/models"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/orchestrator/service"
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"

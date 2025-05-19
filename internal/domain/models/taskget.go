@@ -1,6 +1,6 @@
 package models
 
-import "github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/parser"
+import "github.com/VladimirGladky/Yandex-Calculator/internal/orchestrator/parser"
 
 type TaskGet struct {
 	Id            string  `json:"id"`

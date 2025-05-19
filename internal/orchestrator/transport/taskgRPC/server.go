@@ -3,8 +3,8 @@ package taskgRPC
 import (
 	"context"
 	"fmt"
-	task2 "github.com/VladimirGladky/FinalTaskFirstSprint/gen/proto/task"
-	"github.com/VladimirGladky/FinalTaskFirstSprint/internal/orchestrator/service"
+	task2 "github.com/VladimirGladky/Yandex-Calculator/gen/proto/task"
+	"github.com/VladimirGladky/Yandex-Calculator/internal/orchestrator/service"
 	"google.golang.org/grpc"
 )
 

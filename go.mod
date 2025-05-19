@@ -1,4 +1,4 @@
-module github.com/VladimirGladky/FinalTaskFirstSprint
+module github.com/VladimirGladky/Yandex-Calculator
 
 go 1.23.2
 
